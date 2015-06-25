@@ -1010,7 +1010,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, ulong *yystacksize);
   Currently there are 168 shift/reduce conflicts.
   We should not introduce new conflicts any more.
 */
-%expect 168
+%expect 167
 
 /*
    Comments for TOKENS.

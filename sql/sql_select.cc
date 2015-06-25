@@ -54,6 +54,7 @@
 #include "sql_derived.h"
 #include "sql_statistics.h"
 #include "sql_window.h"
+#include "item_windowfunc.h"
 
 #include "debug_sync.h"          // DEBUG_SYNC
 #include <m_ctype.h>
@@ -3091,6 +3092,47 @@ void JOIN::exec_inner()
   curr_join->having= curr_join->tmp_having;
   curr_join->fields= curr_fields_list;
   curr_join->procedure= procedure;
+
+  bool have_window_functions= false;
+  size_t window_field = -1;
+
+  for (size_t i = 0; i < curr_fields_list->elements; i++)
+    if (curr_fields_list->elem(i)->type() == Item::WINDOW_FUNC_ITEM) {
+      have_window_functions= true;
+      window_field= i;
+
+    }
+
+  if (have_window_functions)
+  {
+    ha_rows examined_rows = 0;
+    ha_rows found_rows = 0;
+//    Filesort_tracker *tracker = NULL;
+    ha_rows filesort_retval;
+
+    SORT_FIELD s_order;
+    memset(&s_order, 0, sizeof(s_order));
+    Window_spec * spec = ((Item_window_func*) curr_fields_list->elem(window_field))->window_spec;
+    s_order.field = table[0]->field[1];
+    //spec->order_list.first->field
+    s_order.reverse = false;
+    table[0]->sort.io_cache=(IO_CACHE*) my_malloc(sizeof(IO_CACHE),
+                                               MYF(MY_WME | MY_ZEROFILL|
+                                                   MY_THREAD_SPECIFIC));
+
+
+    filesort_retval= filesort(thd, table[0], &s_order, 1,
+                              this->select, 100, FALSE,
+                              &examined_rows, &found_rows,
+                              this->explain->ops_tracker.report_sorting(thd));
+    table[0]->sort.found_records= filesort_retval;
+
+    printf("Order List size = %u\n", spec->order_list.elements);
+    this->join_tab->read_first_record = join_init_read_record;
+    this->join_tab->records= found_rows;                     // For SQL_CALC_ROWS
+
+    printf("%lld\n", filesort_retval);
+  }
 
   THD_STAGE_INFO(thd, stage_sending_data);
   DBUG_PRINT("info", ("%s", thd->proc_info));

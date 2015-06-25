@@ -12,7 +12,11 @@ class Item_sum_row_number: public Item_sum_int
   longlong count;
 
   void clear() {}
-  bool add() { return false; }
+  bool add()
+  {
+    count++;
+    return false;
+  }
   void update_field() {}
 
  public:
@@ -22,6 +26,11 @@ class Item_sum_row_number: public Item_sum_int
   enum Sumfunctype sum_func () const
   {
     return ROW_NUMBER_FUNC;
+  }
+
+  longlong val_int()
+  {
+    return count;
   }
 
   const char*func_name() const
@@ -136,11 +145,11 @@ class Item_sum_cume_dist: public Item_sum_num
 class Item_window_func : public Item_result_field
 {
 private:
+public:
   Item_sum *window_func;
   LEX_STRING *window_name;
   Window_spec *window_spec;
 
-public:
   Item_window_func(Item_sum *win_func, LEX_STRING *win_name)
     : window_func(win_func), window_name(win_name), window_spec(NULL) {}
 
