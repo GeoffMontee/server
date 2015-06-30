@@ -3107,31 +3107,52 @@ void JOIN::exec_inner()
   {
     ha_rows examined_rows = 0;
     ha_rows found_rows = 0;
+    Window_spec * spec = ((Item_window_func*) curr_fields_list->elem(window_field))->window_spec;
+    SORT_FIELD *s_order= (SORT_FIELD *) my_malloc(sizeof(SORT_FIELD) *
+        (spec->partition_list.elements + spec->order_list.elements + 10),
+        MYF(MY_WME | MY_ZEROFILL | MY_THREAD_SPECIFIC));
+
+    size_t pos = 0;
+    for (ORDER* curr = spec->partition_list.first; curr; curr=curr->next, pos++)
+    {
+      s_order[pos].item = curr->item[0];
+    }
+
+    for (ORDER* curr = spec->order_list.first; curr; curr=curr->next, pos++)
+    {
+      s_order[pos].item = curr->item[0];
+    }
 //    Filesort_tracker *tracker = NULL;
     ha_rows filesort_retval;
 
-    SORT_FIELD s_order;
-    memset(&s_order, 0, sizeof(s_order));
-    Window_spec * spec = ((Item_window_func*) curr_fields_list->elem(window_field))->window_spec;
-    s_order.field = table[0]->field[1];
-    //spec->order_list.first->field
-    s_order.reverse = false;
+//    s_order[0].item = spec->partition_list.first->item[0];
+//    s_order[0].reverse = false;
+//    s_order[1].item = spec->order_list.first->next->item[0];
+//    s_order[1].reverse = false;
     table[0]->sort.io_cache=(IO_CACHE*) my_malloc(sizeof(IO_CACHE),
                                                MYF(MY_WME | MY_ZEROFILL|
                                                    MY_THREAD_SPECIFIC));
 
 
-    filesort_retval= filesort(thd, table[0], &s_order, 1,
+    filesort_retval= filesort(thd, table[0], s_order,
+                              (spec->partition_list.elements + spec->order_list.elements),
                               this->select, 100, FALSE,
                               &examined_rows, &found_rows,
                               this->explain->ops_tracker.report_sorting(thd));
     table[0]->sort.found_records= filesort_retval;
 
-    printf("Order List size = %u\n", spec->order_list.elements);
+    printf("%p\n", table[0]->sort.io_cache);
+    READ_RECORD read_record;
+    init_read_record(&read_record, thd, table, this->select, 0, false, false);
+    while (read_record.read_record(&read_record))
+    {
+    }
+    end_read_record(&read_record);
     this->join_tab->read_first_record = join_init_read_record;
     this->join_tab->records= found_rows;                     // For SQL_CALC_ROWS
 
-    printf("%lld\n", filesort_retval);
+    my_free(s_order);
+
   }
 
   THD_STAGE_INFO(thd, stage_sending_data);
