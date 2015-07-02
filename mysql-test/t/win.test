@@ -1,0 +1,19 @@
+create table t (a int, b int, x char(32));
+insert into t values (2, 10, 'xx');
+insert into t values (1, 20, 'zz');
+insert into t values (2, 20, 'yy');
+insert into t values (4, 30, 'xxx');
+insert into t values (5, 40, 'vvv');
+select sum(a) from t;
+
+create table t1(a int, b int, x char(32));
+insert into t1 values (2, 10, 'xx');
+insert into t1 values (2, 10, 'zz');
+insert into t1 values (2, 20, 'yy');
+insert into t1 values (3, 10, 'xxx');
+insert into t1 values (3, 20, 'vvv');
+#select row_number() over (order by b) from t1;
+select a, b, x, row_number() over (partition by a,b order by x) from t1;
+#select a, b, x, row_number() over (partition by a order by x) from t1;
+
+drop table t, t1;
