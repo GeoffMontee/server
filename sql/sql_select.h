@@ -1944,5 +1944,6 @@ ulong check_selectivity(THD *thd,
                         TABLE *table,
                         List<COND_STATISTIC> *conds);
 
+int test_if_group_changed(List<Cached_item> &list);
 
 #endif /* SQL_SELECT_INCLUDED */

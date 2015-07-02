@@ -3,23 +3,25 @@
 
 #include "my_global.h"
 #include "item.h"
+#include "sql_window.h"
 
-class Window_spec;
 
 
 class Item_sum_row_number: public Item_sum_int
 {
   longlong count;
 
-  void clear() {}
+
+public:
+  void clear() {
+    count= 0;
+  }
   bool add()
   {
     count++;
     return false;
   }
-  void update_field() {}
 
- public:
   Item_sum_row_number()
     : Item_sum_int(),  count(0) {}
 
@@ -37,7 +39,8 @@ class Item_sum_row_number: public Item_sum_int
   {
     return "row_number";
   }
-  
+
+  void update_field() {}
 };
 
 class Item_sum_rank: public Item_sum_int
@@ -145,16 +148,21 @@ class Item_sum_cume_dist: public Item_sum_num
 class Item_window_func : public Item_result_field
 {
 private:
+  List<Cached_item> partition_fields;
 public:
   Item_sum *window_func;
   LEX_STRING *window_name;
   Window_spec *window_spec;
 
   Item_window_func(Item_sum *win_func, LEX_STRING *win_name)
-    : window_func(win_func), window_name(win_name), window_spec(NULL) {}
+    : window_func(win_func), window_name(win_name), window_spec(NULL) {
+  }
 
   Item_window_func(Item_sum *win_func, Window_spec *win_spec)
-    : window_func(win_func), window_name(NULL), window_spec(win_spec) {}
+    : window_func(win_func), window_name(NULL), window_spec(win_spec) {
+  }
+
+  void advance_window();
 
   enum Item::Type type() const { return Item::WINDOW_FUNC_ITEM; }
 

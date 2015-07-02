@@ -173,7 +173,6 @@ end_update(JOIN *join, JOIN_TAB *join_tab, bool end_of_records);
 static enum_nested_loop_state
 end_unique_update(JOIN *join, JOIN_TAB *join_tab, bool end_of_records);
 
-static int test_if_group_changed(List<Cached_item> &list);
 static int join_read_const_table(THD *thd, JOIN_TAB *tab, POSITION *pos);
 static int join_read_system(JOIN_TAB *tab);
 static int join_read_const(JOIN_TAB *tab);
@@ -3141,13 +3140,6 @@ void JOIN::exec_inner()
                               this->explain->ops_tracker.report_sorting(thd));
     table[0]->sort.found_records= filesort_retval;
 
-    printf("%p\n", table[0]->sort.io_cache);
-    READ_RECORD read_record;
-    init_read_record(&read_record, thd, table, this->select, 0, false, false);
-    while (read_record.read_record(&read_record))
-    {
-    }
-    end_read_record(&read_record);
     this->join_tab->read_first_record = join_init_read_record;
     this->join_tab->records= found_rows;                     // For SQL_CALC_ROWS
 
@@ -17728,6 +17720,15 @@ do_select(JOIN *join,List<Item> *fields,TABLE *table,Procedure *procedure)
       {
         List<Item> *columns_list= (procedure ? &join->procedure_fields_list :
                                    fields);
+        List_iterator_fast<Item> it(*columns_list);
+        for (Item *item= it++; item; item= it++)
+        {
+          if (item->type() == Item::WINDOW_FUNC_ITEM)
+          {
+            ((Item_window_func *) item)->advance_window();
+          }
+        }
+
         rc= join->result->send_data(*columns_list) > 0;
       }
     }
@@ -22372,7 +22373,7 @@ int test_if_item_cache_changed(List<Cached_item> &list)
 
 
 
-static int
+int
 test_if_group_changed(List<Cached_item> &list)
 {
   DBUG_ENTER("test_if_group_changed");

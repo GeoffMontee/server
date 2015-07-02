@@ -1,6 +1,6 @@
-
 #ifndef SQL_WINDOW_INCLUDED
 #define SQL_WINDOW_INCLUDED
+
 
 #include "my_global.h"
 #include "item.h"
