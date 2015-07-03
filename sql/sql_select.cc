@@ -3096,11 +3096,11 @@ void JOIN::exec_inner()
 
   for (size_t i = 0; i < curr_fields_list->elements; i++)
     if (curr_fields_list->elem(i)->type() == Item::WINDOW_FUNC_ITEM) {
-      join->have_window_functions= true;
+      curr_join->have_window_functions= true;
       window_field= i;
     }
 
-  if (have_window_functions)
+  if (curr_join->have_window_functions)
   {
     ha_rows examined_rows = 0;
     ha_rows found_rows = 0;
