@@ -3092,14 +3092,12 @@ void JOIN::exec_inner()
   curr_join->fields= curr_fields_list;
   curr_join->procedure= procedure;
 
-  bool have_window_functions= false;
   size_t window_field = -1;
 
   for (size_t i = 0; i < curr_fields_list->elements; i++)
     if (curr_fields_list->elem(i)->type() == Item::WINDOW_FUNC_ITEM) {
-      have_window_functions= true;
+      join->have_window_functions= true;
       window_field= i;
-
     }
 
   if (have_window_functions)
@@ -17720,14 +17718,6 @@ do_select(JOIN *join,List<Item> *fields,TABLE *table,Procedure *procedure)
       {
         List<Item> *columns_list= (procedure ? &join->procedure_fields_list :
                                    fields);
-        List_iterator_fast<Item> it(*columns_list);
-        for (Item *item= it++; item; item= it++)
-        {
-          if (item->type() == Item::WINDOW_FUNC_ITEM)
-          {
-            ((Item_window_func *) item)->advance_window();
-          }
-        }
 
         rc= join->result->send_data(*columns_list) > 0;
       }
@@ -19194,6 +19184,15 @@ end_send(JOIN *join, JOIN_TAB *join_tab __attribute__((unused)),
   DBUG_ENTER("end_send");
   if (!end_of_records)
   {
+    /* Advance window functions to the next row before sending their values. */
+    List_iterator_fast<Item> it(*join->fields);
+    for (Item *item= it++; item; item= it++)
+    {
+      if (item->type() == Item::WINDOW_FUNC_ITEM)
+      {
+        ((Item_window_func *) item)->advance_window();
+      }
+    }
     if (join->table_count &&
         (join->join_tab->is_using_loose_index_scan() ||
          /*

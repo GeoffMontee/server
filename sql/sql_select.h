@@ -1028,6 +1028,7 @@ public:
   bool     first_record,full_join, no_field_update;
   bool     hash_join;
   bool	   do_send_rows;
+  bool     have_window_functions;
   table_map const_table_map;
   /** 
     Bitmap of semijoin tables that the current partial plan decided
@@ -1393,6 +1394,7 @@ public:
     pre_sort_join_tab= NULL;
     emb_sjm_nest= NULL;
     sjm_lookup_tables= 0;
+    have_window_functions= FALSE;
 
     /* 
       The following is needed because JOIN::cleanup(true) may be called for 

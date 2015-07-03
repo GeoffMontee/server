@@ -905,10 +905,6 @@ bool Protocol::send_result_set_row(List<Item> *row_items)
 
   for (Item *item= it++; item; item= it++)
   {
-    if (item->type() == Item::WINDOW_FUNC_ITEM)
-    {
-      ((Item_window_func *) item)->advance_window();
-    }
     if (item->send(this, &str_buffer))
     {
       // If we're out of memory, reclaim some, to help us recover.
